@@ -38,6 +38,7 @@ Environment:
 --*/
 
 #include "kbfiltr.h"
+#include "chordfilter.h"
 
 #ifdef ALLOC_PRAGMA
 #pragma alloc_text (INIT, DriverEntry)
@@ -51,7 +52,7 @@ NTSTATUS
 DriverEntry(
     IN PDRIVER_OBJECT  DriverObject,
     IN PUNICODE_STRING RegistryPath
-    )
+)
 /*++
 
 Routine Description:
@@ -98,10 +99,10 @@ Return Value:
     // Create a framework driver object to represent our driver.
     //
     status = WdfDriverCreate(DriverObject,
-                            RegistryPath,
-                            WDF_NO_OBJECT_ATTRIBUTES,
-                            &config,
-                            WDF_NO_HANDLE); // hDriver optional
+        RegistryPath,
+        WDF_NO_OBJECT_ATTRIBUTES,
+        &config,
+        WDF_NO_HANDLE); // hDriver optional
     if (!NT_SUCCESS(status)) {
         DebugPrint(("WdfDriverCreate failed with status 0x%x\n", status));
     }
@@ -113,7 +114,7 @@ NTSTATUS
 KbFilter_EvtDeviceAdd(
     IN WDFDRIVER        Driver,
     IN PWDFDEVICE_INIT  DeviceInit
-    )
+)
 /*++
 Routine Description:
 
@@ -185,7 +186,7 @@ Return Value:
     // outstanding ioctl request sent earlier to the port driver.
     //
     WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(&ioQueueConfig,
-                             WdfIoQueueDispatchParallel);
+        WdfIoQueueDispatchParallel);
 
     //
     // Framework by default creates non-power managed queues for
@@ -194,12 +195,12 @@ Return Value:
     ioQueueConfig.EvtIoInternalDeviceControl = KbFilter_EvtIoInternalDeviceControl;
 
     status = WdfIoQueueCreate(hDevice,
-                            &ioQueueConfig,
-                            WDF_NO_OBJECT_ATTRIBUTES,
-                            WDF_NO_HANDLE // pointer to default queue
-                            );
+        &ioQueueConfig,
+        WDF_NO_OBJECT_ATTRIBUTES,
+        WDF_NO_HANDLE // pointer to default queue
+    );
     if (!NT_SUCCESS(status)) {
-        DebugPrint( ("WdfIoQueueCreate failed 0x%x\n", status));
+        DebugPrint(("WdfIoQueueCreate failed 0x%x\n", status));
         return status;
     }
 
@@ -208,7 +209,7 @@ Return Value:
     // the rawPDO. 
     //
     WDF_IO_QUEUE_CONFIG_INIT(&ioQueueConfig,
-                             WdfIoQueueDispatchParallel);
+        WdfIoQueueDispatchParallel);
 
     //
     // Framework by default creates non-power managed queues for
@@ -217,12 +218,12 @@ Return Value:
     ioQueueConfig.EvtIoDeviceControl = KbFilter_EvtIoDeviceControlFromRawPdo;
 
     status = WdfIoQueueCreate(hDevice,
-                            &ioQueueConfig,
-                            WDF_NO_OBJECT_ATTRIBUTES,
-                            &hQueue
-                            );
+        &ioQueueConfig,
+        WDF_NO_OBJECT_ATTRIBUTES,
+        &hQueue
+    );
     if (!NT_SUCCESS(status)) {
-        DebugPrint( ("WdfIoQueueCreate failed 0x%x\n", status));
+        DebugPrint(("WdfIoQueueCreate failed 0x%x\n", status));
         return status;
     }
 
@@ -249,7 +250,7 @@ KbFilter_EvtIoDeviceControlFromRawPdo(
     IN size_t        OutputBufferLength,
     IN size_t        InputBufferLength,
     IN ULONG         IoControlCode
-    )
+)
 /*++
 
 Routine Description:
@@ -295,7 +296,7 @@ Return Value:
 
     switch (IoControlCode) {
     case IOCTL_KBFILTR_GET_KEYBOARD_ATTRIBUTES:
-        
+
         //
         // Buffer is too small, fail the request
         //
@@ -305,16 +306,16 @@ Return Value:
         }
 
         status = WdfRequestRetrieveOutputMemory(Request, &outputMemory);
-        
+
         if (!NT_SUCCESS(status)) {
             DebugPrint(("WdfRequestRetrieveOutputMemory failed %x\n", status));
             break;
         }
-        
+
         status = WdfMemoryCopyFromBuffer(outputMemory,
-                                    0,
-                                    &devExt->KeyboardAttributes,
-                                    sizeof(KEYBOARD_ATTRIBUTES));
+            0,
+            &devExt->KeyboardAttributes,
+            sizeof(KEYBOARD_ATTRIBUTES));
 
         if (!NT_SUCCESS(status)) {
             DebugPrint(("WdfMemoryCopyFromBuffer failed %x\n", status));
@@ -322,13 +323,13 @@ Return Value:
         }
 
         bytesTransferred = sizeof(KEYBOARD_ATTRIBUTES);
-        
-        break;    
+
+        break;
     default:
         status = STATUS_NOT_IMPLEMENTED;
         break;
     }
-    
+
     WdfRequestCompleteWithInformation(Request, status, bytesTransferred);
 
     return;
@@ -341,7 +342,7 @@ KbFilter_EvtIoInternalDeviceControl(
     IN size_t        OutputBufferLength,
     IN size_t        InputBufferLength,
     IN ULONG         IoControlCode
-    )
+)
 /*++
 
 Routine Description:
@@ -407,9 +408,9 @@ Return Value:
 
     switch (IoControlCode) {
 
-    //
-    // Connect a keyboard class device driver to the port driver.
-    //
+        //
+        // Connect a keyboard class device driver to the port driver.
+        //
     case IOCTL_INTERNAL_KEYBOARD_CONNECT:
         //
         // Only allow one connection.
@@ -424,10 +425,10 @@ Return Value:
         // (Parameters.DeviceIoControl.Type3InputBuffer).
         //
         status = WdfRequestRetrieveInputBuffer(Request,
-                                    sizeof(CONNECT_DATA),
-                                    &connectData,
-                                    &length);
-        if(!NT_SUCCESS(status)){
+            sizeof(CONNECT_DATA),
+            &connectData,
+            &length);
+        if (!NT_SUCCESS(status)) {
             DebugPrint(("WdfRequestRetrieveInputBuffer failed %x\n", status));
             break;
         }
@@ -451,9 +452,9 @@ Return Value:
 
         break;
 
-    //
-    // Disconnect a keyboard class device driver from the port driver.
-    //
+        //
+        // Disconnect a keyboard class device driver from the port driver.
+        //
     case IOCTL_INTERNAL_KEYBOARD_DISCONNECT:
 
         //
@@ -465,11 +466,11 @@ Return Value:
         status = STATUS_NOT_IMPLEMENTED;
         break;
 
-    //
-    // Attach this driver to the initialization and byte processing of the
-    // i8042 (ie PS/2) keyboard.  This is only necessary if you want to do PS/2
-    // specific functions, otherwise hooking the CONNECT_DATA is sufficient
-    //
+        //
+        // Attach this driver to the initialization and byte processing of the
+        // i8042 (ie PS/2) keyboard.  This is only necessary if you want to do PS/2
+        // specific functions, otherwise hooking the CONNECT_DATA is sufficient
+        //
     case IOCTL_INTERNAL_I8042_HOOK_KEYBOARD:
 
         DebugPrint(("hook keyboard received!\n"));
@@ -479,10 +480,10 @@ Return Value:
         // (Parameters.DeviceIoControl.Type3InputBuffer)
         //
         status = WdfRequestRetrieveInputBuffer(Request,
-                            sizeof(INTERNAL_I8042_HOOK_KEYBOARD),
-                            &hookKeyboard,
-                            &length);
-        if(!NT_SUCCESS(status)){
+            sizeof(INTERNAL_I8042_HOOK_KEYBOARD),
+            &hookKeyboard,
+            &length);
+        if (!NT_SUCCESS(status)) {
             DebugPrint(("WdfRequestRetrieveInputBuffer failed %x\n", status));
             break;
         }
@@ -498,7 +499,7 @@ Return Value:
         //
         // replace old Context with our own
         //
-        hookKeyboard->Context = (PVOID) devExt;
+        hookKeyboard->Context = (PVOID)devExt;
 
         if (hookKeyboard->InitializationRoutine) {
             devExt->UpperInitializationRoutine =
@@ -511,7 +512,7 @@ Return Value:
         if (hookKeyboard->IsrRoutine) {
             devExt->UpperIsrHook = hookKeyboard->IsrRoutine;
         }
-        hookKeyboard->IsrRoutine = (PI8042_KEYBOARD_ISR) KbFilter_IsrHook;
+        hookKeyboard->IsrRoutine = (PI8042_KEYBOARD_ISR)KbFilter_IsrHook;
 
         //
         // Store all of the other important stuff
@@ -528,12 +529,12 @@ Return Value:
         forwardWithCompletionRoutine = TRUE;
         completionContext = devExt;
         break;
-        
-    //
-    // Might want to capture these in the future.  For now, then pass them down
-    // the stack.  These queries must be successful for the RIT to communicate
-    // with the keyboard.
-    //
+
+        //
+        // Might want to capture these in the future.  For now, then pass them down
+        // the stack.  These queries must be successful for the RIT to communicate
+        // with the keyboard.
+        //
     case IOCTL_KEYBOARD_QUERY_INDICATOR_TRANSLATION:
     case IOCTL_KEYBOARD_QUERY_INDICATORS:
     case IOCTL_KEYBOARD_SET_INDICATORS:
@@ -559,8 +560,8 @@ Return Value:
         // Format the request with the output memory so the completion routine
         // can access the return data in order to cache it into the context area
         //
-        
-        status = WdfRequestRetrieveOutputMemory(Request, &outputMemory); 
+
+        status = WdfRequestRetrieveOutputMemory(Request, &outputMemory);
 
         if (!NT_SUCCESS(status)) {
             DebugPrint(("WdfRequestRetrieveOutputMemory failed: 0x%x\n", status));
@@ -569,34 +570,34 @@ Return Value:
         }
 
         status = WdfIoTargetFormatRequestForInternalIoctl(WdfDeviceGetIoTarget(hDevice),
-                                                         Request,
-                                                         IoControlCode,
-                                                         NULL,
-                                                         NULL,
-                                                         outputMemory,
-                                                         NULL);
+            Request,
+            IoControlCode,
+            NULL,
+            NULL,
+            outputMemory,
+            NULL);
 
         if (!NT_SUCCESS(status)) {
             DebugPrint(("WdfIoTargetFormatRequestForInternalIoctl failed: 0x%x\n", status));
             WdfRequestComplete(Request, status);
             return;
         }
-    
+
         // 
         // Set our completion routine with a context area that we will save
         // the output data into
         //
         WdfRequestSetCompletionRoutine(Request,
-                                    KbFilterRequestCompletionRoutine,
-                                    completionContext);
+            KbFilterRequestCompletionRoutine,
+            completionContext);
 
         ret = WdfRequestSend(Request,
-                             WdfDeviceGetIoTarget(hDevice),
-                             WDF_NO_SEND_OPTIONS);
+            WdfDeviceGetIoTarget(hDevice),
+            WDF_NO_SEND_OPTIONS);
 
         if (ret == FALSE) {
-            status = WdfRequestGetStatus (Request);
-            DebugPrint( ("WdfRequestSend failed: 0x%x\n", status));
+            status = WdfRequestGetStatus(Request);
+            DebugPrint(("WdfRequestSend failed: 0x%x\n", status));
             WdfRequestComplete(Request, status);
         }
 
@@ -609,16 +610,16 @@ Return Value:
         // fire and forget.
         //
         WDF_REQUEST_SEND_OPTIONS_INIT(&options,
-                                      WDF_REQUEST_SEND_OPTION_SEND_AND_FORGET);
+            WDF_REQUEST_SEND_OPTION_SEND_AND_FORGET);
 
         ret = WdfRequestSend(Request, WdfDeviceGetIoTarget(hDevice), &options);
 
         if (ret == FALSE) {
-            status = WdfRequestGetStatus (Request);
+            status = WdfRequestGetStatus(Request);
             DebugPrint(("WdfRequestSend failed: 0x%x\n", status));
             WdfRequestComplete(Request, status);
         }
-        
+
     }
 
     return;
@@ -631,7 +632,7 @@ KbFilter_InitializationRoutine(
     IN PI8042_SYNCH_READ_PORT          ReadPort,
     IN PI8042_SYNCH_WRITE_PORT         WritePort,
     OUT PBOOLEAN                       TurnTranslationOn
-    )
+)
 /*++
 
 Routine Description:
@@ -672,12 +673,12 @@ Return Value:
     //
     if (devExt->UpperInitializationRoutine) {
         status = (*devExt->UpperInitializationRoutine) (
-                        devExt->UpperContext,
-                        SynchFuncContext,
-                        ReadPort,
-                        WritePort,
-                        TurnTranslationOn
-                        );
+            devExt->UpperContext,
+            SynchFuncContext,
+            ReadPort,
+            WritePort,
+            TurnTranslationOn
+            );
 
         if (!NT_SUCCESS(status)) {
             return status;
@@ -697,7 +698,7 @@ KbFilter_IsrHook(
     PUCHAR                 DataByte,
     PBOOLEAN               ContinueProcessing,
     PKEYBOARD_SCAN_STATE   ScanState
-    )
+)
 /*++
 
 Routine Description:
@@ -744,14 +745,14 @@ Return Value:
 
     if (devExt->UpperIsrHook) {
         retVal = (*devExt->UpperIsrHook) (
-                        devExt->UpperContext,
-                        CurrentInput,
-                        CurrentOutput,
-                        StatusByte,
-                        DataByte,
-                        ContinueProcessing,
-                        ScanState
-                        );
+            devExt->UpperContext,
+            CurrentInput,
+            CurrentOutput,
+            StatusByte,
+            DataByte,
+            ContinueProcessing,
+            ScanState
+            );
 
         if (!retVal || !(*ContinueProcessing)) {
             return retVal;
@@ -762,214 +763,13 @@ Return Value:
     return retVal;
 }
 
-/*
-TODO this approach is going to have edge cases if a modifier key is changed during a keypress
-we should probably track the modifier applied to the key press and ensure that modifier is the one that gets released
-
-implement a new system:
-on press increment and decrement the row modifiers based on hand
-on first release apply the current modifiers to the key and emit it
-subsequent releases remove modifiers
-
--CENTRE ROW-
-PRESSED:
-If there's currently no modifier key this key becomes the modifier key
-If there is a modifier key the modifer gets applied to this key
-RELEASED:
-If there's no modifier key the last modifier key gets applied
-If there is a modifier key the modifer gets applied to the event
-If this is the modifier key it gets set to a stale modifier key 
-    & if no other keys were pressed while it was being held it gets injected back into the list
--TOP/BOTTOM ROWS-
-COMPATIBLE MODE -   passes through without modification
-FORCED MODE -       blocks the keys
-DEDICATED MODE -    moves the number keys down a row and the command keys up a row
-*Also optionally swap capslock and tab because capslock is useless
-*/
-
-enum Mode
-{
-    Compatible,
-    Forced,
-    Dedicated
-} mode;
-
-struct Modifier
-{
-    USHORT currentHeldKey;
-    enum ModifierType
-    {
-        None,
-        Up,
-        Down,
-        Shift
-    } modifierType;
-};
-struct Modifier currentModifier, previousModifier;
-
-int Update(PKEYBOARD_INPUT_DATA data)
-{
-    if (IsCentreRow(data->MakeCode))
-    {
-        return UpdateCentreRow(data);
-    }
-    else if (IsBottomRow(data->MakeCode) || IsTopRow(data->MakeCode))
-    {
-        switch (mode)
-        {
-        case Dedicated:
-            return ModifyTopBottomRows(data);
-        case Forced:
-            return FALSE;
-        case Compatible:
-        default:
-            return TRUE;
-        }
-    }
-    else return TRUE;
-}
-
-int ModifyTopBottomRows(PKEYBOARD_INPUT_DATA data)
-{
-    if (IsTopRow(data->MakeCode))
-    {
-        data->MakeCode -= 9;
-    }
-    else if (IsBottomRow(data->MakeCode))
-    {
-        switch (data->MakeCode)
-        {
-        case 0x2B:
-            data->MakeCode = 0x2A;
-            break;
-        case 0x2C:
-            data->MakeCode = 0x1D;
-            break;
-        case 0x2D:
-            data->MakeCode = 0xE05B;
-            break;
-        case 0x2E:
-            data->MakeCode = 0x38;
-            break;
-        case 0x35:
-            data->MakeCode = 0x36;
-            break;
-        case 0x34:
-            data->MakeCode = 0xE01D;
-                break;
-        case 0x33:
-            data->MakeCode = 0xE05D;
-            break;
-        case 0x32:
-            data->MakeCode = 0xE05C;
-            break;
-        case 0x31:
-            data->MakeCode = 0xE038;
-            break;
-        default:
-            return FALSE;
-        }
-    }
-    else if (data->MakeCode == 0x3A)
-        data->MakeCode = 0x0F;
-    else if (data->MakeCode == 0x0F)
-        data->MakeCode = 0x3A;
-    return TRUE;
-}
-
-int IsTopRow(USHORT scancode)
-{
-    if (scancode >= 0x10 && scancode <= 0x1B)
-        return TRUE;
-    return FALSE;
-}
-
-int IsCentreRow(USHORT scancode)
-{
-    if(scancode >= 0x1E && scancode <= 0x29)
-        return TRUE;
-    return FALSE;
-}
-
-int IsBottomRow(USHORT scancode)
-{
-    if (scancode >= 0x2B && scancode <= 0x35)
-        return TRUE;
-    return FALSE;
-}
-
-enum ModifierType GetModifier(USHORT scancode)
-{
-    if (scancode == 0x39) return Shift;
-    else if (scancode <= 0x22) return Down;
-    else if (scancode > 0x22) return Up;
-    else return None;
-}
-
-int UpdateCentreRow(PKEYBOARD_INPUT_DATA data)
-{
-    if (data->Flags == KEY_MAKE)
-    {
-        switch (currentModifier.modifierType)
-        {
-        case None:
-            SetModifier(data);
-            return FALSE;
-        default:
-            ApplyModifier(data, currentModifier.modifierType);
-            return TRUE;
-        }
-    }
-    else if (data->Flags == KEY_BREAK)
-    {
-        if (currentModifier.currentHeldKey == data->MakeCode)
-        {
-            //TODO: if we release the current modifier without pressing another key we need to reinject the keypress and release
-            SetModifier(0);
-            return FALSE;
-        }
-        else
-        {
-            switch (currentModifier.modifierType)
-            {
-            case None:
-                ApplyModifier(data, previousModifier.modifierType);
-                return TRUE;
-            default:
-                ApplyModifier(data, currentModifier.modifierType);
-                return TRUE;
-            }
-        }
-    }
-}
-
-void SetModifier(USHORT scancode)
-{
-    previousModifier = currentModifier;
-    currentModifier.currentHeldKey = scancode;
-    currentModifier.modifierType = GetModifier(scancode);
-}
-
-void ApplyModifier(PKEYBOARD_INPUT_DATA data, enum ModifierType modifier)
-{
-    switch (modifier)
-    {
-    case Up:
-        data->MakeCode -= 0xE;
-        break;
-    case Down:
-        data->MakeCode += 0xD;
-        break;
-    }
-}
-
 VOID
 KbFilter_ServiceCallback(
     IN PDEVICE_OBJECT  DeviceObject,
     IN PKEYBOARD_INPUT_DATA InputDataStart,
     IN PKEYBOARD_INPUT_DATA InputDataEnd,
     IN OUT PULONG InputDataConsumed
-    )
+)
 /*++
 
 Routine Description:
@@ -1007,22 +807,23 @@ Return Value:
 
     devExt = FilterGetData(hDevice);
 
-    int elements = (InputDataEnd - InputDataStart);
+    //int elements = (InputDataEnd - InputDataStart);
     PKEYBOARD_INPUT_DATA output[256];
     memset(output, 0, 256 * sizeof(PKEYBOARD_INPUT_DATA));
     UINT8 outputPosition = 0;
-    
+
     for (PKEYBOARD_INPUT_DATA data = InputDataStart; data < InputDataEnd; ++data)
     {
         //TODO include/exclude based on return value
         if (Update(data))output[outputPosition++] = data;
     }
 
-    (*(PSERVICE_CALLBACK_ROUTINE)(ULONG_PTR) devExt->UpperConnectData.ClassService)(
+    *InputDataConsumed = outputPosition;
+    (*(PSERVICE_CALLBACK_ROUTINE)(ULONG_PTR)devExt->UpperConnectData.ClassService)(
         devExt->UpperConnectData.ClassDeviceObject,
         output,
         output[outputPosition],
-        outputPosition);
+        InputDataConsumed);
 }
 
 VOID
@@ -1031,7 +832,7 @@ KbFilterRequestCompletionRoutine(
     WDFIOTARGET                 Target,
     PWDF_REQUEST_COMPLETION_PARAMS CompletionParams,
     WDFCONTEXT                  Context
-   )
+)
 /*++
 
 Routine Description:
@@ -1056,22 +857,22 @@ Return Value:
     NTSTATUS    status = CompletionParams->IoStatus.Status;
 
     UNREFERENCED_PARAMETER(Target);
- 
+
     //
     // Save the keyboard attributes in our context area so that we can return
     // them to the app later.
     //
-    if (NT_SUCCESS(status) && 
+    if (NT_SUCCESS(status) &&
         CompletionParams->Type == WdfRequestTypeDeviceControlInternal &&
         CompletionParams->Parameters.Ioctl.IoControlCode == IOCTL_KEYBOARD_QUERY_ATTRIBUTES) {
 
-        if( CompletionParams->Parameters.Ioctl.Output.Length >= sizeof(KEYBOARD_ATTRIBUTES)) {
-            
+        if (CompletionParams->Parameters.Ioctl.Output.Length >= sizeof(KEYBOARD_ATTRIBUTES)) {
+
             status = WdfMemoryCopyToBuffer(buffer,
-                                           CompletionParams->Parameters.Ioctl.Output.Offset,
-                                           &((PDEVICE_EXTENSION)Context)->KeyboardAttributes,
-                                            sizeof(KEYBOARD_ATTRIBUTES)
-                                          );
+                CompletionParams->Parameters.Ioctl.Output.Offset,
+                &((PDEVICE_EXTENSION)Context)->KeyboardAttributes,
+                sizeof(KEYBOARD_ATTRIBUTES)
+            );
         }
     }
 

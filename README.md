@@ -7,3 +7,5 @@ Stenography is easily the most efficient form of human computer interface. Unfor
 ## Chording system
 This chording scheme is intended to provide the benefit of stenography without the drawbacks. It is easy to learn and doesn't require a dictionary. The principle is simple, the idea is to keep your fingers on the home row. In order to move up a row, the user holds a key on the right hand side of the home row. In order to move down a row, they hold a key on the left hand side of the home row. In this way we can cover almost every key on keyboard without leaving the home row and in theory approach the speed of stenography without the years of training required to master it.
 
+* files are based on microsoft's kbfiltr sample described here - https://docs.microsoft.com/en-us/windows-hardware/drivers/hid/keyboard-and-mouse-hid-client-drivers#kbfiltr-sample
+
