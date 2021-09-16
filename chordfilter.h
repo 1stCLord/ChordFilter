@@ -1,4 +1,5 @@
 #pragma once
+#include <ntdef.h>
 #include <ntddkbd.h>
 
 enum KeyAction

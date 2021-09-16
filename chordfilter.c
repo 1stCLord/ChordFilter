@@ -18,6 +18,16 @@ enum Mode
     Mode_Dedicated
 } mode;
 
+enum ModifierType
+{
+    None,
+    Up,
+    Down,
+    Shift
+};
+
+typedef signed char int8_t;
+
 int8_t modifierDirection = 0;
 USHORT lastUpDown = KEY_BREAK;
 
@@ -126,8 +136,8 @@ void ApplyModifier(PKEYBOARD_INPUT_DATA data, enum ModifierType modifier)
 void UpdateModifier(PKEYBOARD_INPUT_DATA data)
 {
     enum ModifierType KeyModifier = GetModifier(data->MakeCode);
-    if ((Modifier == Up && data->Flags == KEY_MAKE) (Modifier == Down && data->Flags == KEY_BREAK))++modifierDirection;
-    else if ((Modifier == Down && data->Flags == KEY_MAKE) (Modifier == Up && data->Flags == KEY_BREAK))--modifierDirection;
+    if ((KeyModifier == Up && data->Flags == KEY_MAKE) || (KeyModifier == Down && data->Flags == KEY_BREAK))++modifierDirection;
+    else if ((KeyModifier == Down && data->Flags == KEY_MAKE) || (KeyModifier == Up && data->Flags == KEY_BREAK))--modifierDirection;
 }
 
 /*
@@ -137,7 +147,7 @@ enum KeyAction UpdateCentreRow(PKEYBOARD_INPUT_DATA data)
 {
     int result = Action_Consume;
 
-    UpdateModifier(data->MakeCode);
+    UpdateModifier(data);
 
     if (data->Flags == KEY_BREAK && lastUpDown == KEY_MAKE)
     {
